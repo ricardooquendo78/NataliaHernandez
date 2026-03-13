@@ -78,7 +78,8 @@ if (serviceCount.count === 0) {
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // --- API ROUTES ---
 
@@ -179,7 +180,7 @@ async function startServer() {
 
   // Promotions (Admin view of premium users)
   app.get("/api/promotions", (req, res) => {
-    const users = db.prepare("SELECT id, name, phone, appointment_count FROM users WHERE role = 'premium'").all();
+    const users = db.prepare("SELECT id, name, phone, appointment_count, photo_url FROM users WHERE role = 'premium'").all();
     res.json(users);
   });
 
