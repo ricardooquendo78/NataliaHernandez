@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Edit2,
+  Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,22 +44,40 @@ const fileToBase64 = (file: File): Promise<string> => {
 // --- COMPONENTS ---
 
 const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
-  const [isRegister, setIsRegister] = useState(false);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     try {
-      if (isRegister) {
+      if (mode === 'register') {
         const user = await api.auth.register({ phone, password, name });
         onLogin(user);
-      } else {
+      } else if (mode === 'login') {
         const user = await api.auth.login({ phone, password });
         onLogin(user);
+      } else if (mode === 'forgot') {
+        const res = await api.auth.forgotPassword({ phone });
+        setSuccess(res.message);
+        // Open WhatsApp to request the code
+        window.open(`https://wa.me/573233597721?text=${encodeURIComponent(`Hola Natalia, olvidé mi contraseña. Mi número es ${phone}. ¿Me regalas mi código?`)}`, '_blank');
+        setMode('reset');
+      } else if (mode === 'reset') {
+        const res = await api.auth.resetPassword({ phone, code, newPassword: password });
+        setSuccess(res.message);
+        setTimeout(() => {
+          setMode('login');
+          setPassword('');
+          setCode('');
+          setSuccess('');
+        }, 2000);
       }
     } catch (err: any) {
       setError(err.message);
@@ -72,10 +92,17 @@ const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
         className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl shadow-rose-200/50 w-full max-w-md border border-white"
       >
         <h2 className="text-3xl font-serif italic text-stone-800 mb-6 text-center">
-          {isRegister ? 'Crear Cuenta' : 'Bienvenida'}
+          {mode === 'register' ? 'Crear Cuenta' : mode === 'forgot' ? 'Recuperar Contraseña' : mode === 'reset' ? 'Nueva Contraseña' : 'Bienvenida'}
         </h2>
+
+        {mode === 'forgot' && (
+          <p className="text-stone-500 text-sm mb-6 text-center leading-relaxed">
+            Ingresa tu teléfono y pídele tu código de seguridad directamente a la administradora.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegister && (
+          {mode === 'register' && (
             <div>
               <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Nombre</label>
               <input
@@ -87,42 +114,76 @@ const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
               />
             </div>
           )}
+
           <div>
             <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Teléfono</label>
             <input
               type="tel"
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
+              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
               required
+              disabled={mode === 'reset'}
             />
           </div>
-          <div>
-            <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
-              required
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          {mode === 'reset' && (
+            <div>
+              <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Código de verificación</label>
+              <input
+                type="text"
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                placeholder="Ej: 1234"
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400 text-center tracking-widest font-bold"
+                required
+              />
+            </div>
+          )}
+
+          {(mode === 'login' || mode === 'register' || mode === 'reset') && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-mono uppercase text-stone-500">
+                  {mode === 'reset' ? 'Nueva Contraseña' : 'Contraseña'}
+                </label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
+                    className="text-xs text-stone-500 hover:text-stone-800 underline"
+                  >
+                    ¿La olvidaste?
+                  </button>
+                )}
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
+                required={mode !== 'forgot'}
+              />
+            </div>
+          )}
+
+          {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
+          {success && <p className="text-emerald-600 text-sm bg-emerald-50 p-3 rounded-xl border border-emerald-100">{success}</p>}
+
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-rose-800 to-rose-950 text-white p-4 rounded-xl font-medium hover:shadow-lg hover:shadow-rose-950/20 transition-all active:scale-[0.98]"
           >
-            {isRegister ? 'Registrarse' : 'Iniciar Sesión'}
+            {mode === 'register' ? 'Registrarse' : mode === 'forgot' ? 'Solicitar a Natalia por WSP' : mode === 'reset' ? 'Guardar y Entrar' : 'Iniciar Sesión'}
           </button>
         </form>
+
         <p className="mt-6 text-center text-stone-500 text-sm">
-          {isRegister ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
-          <button
-            onClick={() => setIsRegister(!isRegister)}
-            className="ml-1 text-stone-800 font-semibold underline"
-          >
-            {isRegister ? 'Inicia sesión' : 'Regístrate'}
-          </button>
+          {mode === 'login' ? (
+            <span>¿No tienes cuenta? <button onClick={() => { setMode('register'); setError(''); setSuccess(''); }} className="text-stone-800 font-semibold underline">Regístrate</button></span>
+          ) : (
+            <span>¿Ya tienes cuenta? <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-stone-800 font-semibold underline">Inicia sesión</button></span>
+          )}
         </p>
       </motion.div>
     </div>
@@ -153,7 +214,10 @@ const ServicesList = ({ onBook }: { onBook?: () => void }) => {
             />
           </div>
           <div className="p-8 flex-1 flex flex-col">
-            <h3 className="text-2xl font-serif mb-4">{service.name}</h3>
+            <div className="flex justify-between items-start mb-4 gap-4">
+              <h3 className="text-2xl font-serif">{service.name}</h3>
+              <span className="text-rose-800 font-bold text-xl shrink-0">${service.price?.toLocaleString() || 0}</span>
+            </div>
             <p className="text-stone-500 text-sm mb-6 flex-1">{service.description}</p>
             {onBook && (
               <button
@@ -185,7 +249,7 @@ const Home = ({ user, onNavigate }: { user: User | null, onNavigate: (page: stri
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl font-serif italic mb-4 text-center"
           >
-            Look your best version
+            Luce tu mejor versión
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -193,7 +257,7 @@ const Home = ({ user, onNavigate }: { user: User | null, onNavigate: (page: stri
             transition={{ delay: 0.2 }}
             className="text-lg font-light tracking-[0.3em] uppercase"
           >
-            Especialista en pestañas
+            Especialista en cejas y pestañas
           </motion.p>
         </div>
       </section>
@@ -326,7 +390,7 @@ const ReviewsSection = ({ user }: { user: User | null }) => {
 };
 
 const AdminDashboard = () => {
-  const [tab, setTab] = useState<'calendar' | 'financials' | 'clients' | 'services' | 'history'>('calendar');
+  const [tab, setTab] = useState<'calendar' | 'financials' | 'clients' | 'services' | 'history' | 'recoveries'>('calendar');
 
   return (
     <div className="space-y-8">
@@ -337,6 +401,7 @@ const AdminDashboard = () => {
           { id: 'financials', label: 'Finanzas', icon: DollarSign },
           { id: 'clients', label: 'Clientas', icon: UserIcon },
           { id: 'services', label: 'Servicios', icon: Settings },
+          { id: 'recoveries', label: 'Recuperaciones', icon: Key },
         ].map(t => (
           <button
             key={t.id}
@@ -356,7 +421,46 @@ const AdminDashboard = () => {
         {tab === 'financials' && <AdminFinancials />}
         {tab === 'clients' && <AdminClients />}
         {tab === 'services' && <AdminServices />}
+        {tab === 'recoveries' && <AdminRecoveries />}
       </div>
+    </div>
+  );
+};
+
+const AdminRecoveries = () => {
+  const [codes, setCodes] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.auth.getResetCodes().then(setCodes);
+  }, []);
+
+  return (
+    <div className="space-y-8">
+      <h3 className="text-3xl font-serif italic">Recuperaciones Pendientes</h3>
+      <p className="text-stone-500">Estos son los códigos activos (expiran en 15 minutos) para las clientas que solicitaron recuperar su contraseña.</p>
+
+      {codes.length === 0 ? (
+        <p className="text-stone-400 italic">No hay solicitudes pendientes.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {codes.map((c, i) => (
+            <div key={i} className="bg-stone-50 p-6 rounded-3xl border border-stone-100 flex flex-col gap-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-lg">{c.name || 'Clienta'}</p>
+                  <p className="text-sm text-stone-500">{c.phone}</p>
+                </div>
+                <span className="bg-rose-100 text-rose-800 font-mono font-bold px-3 py-1 rounded-xl tracking-widest">
+                  {c.code}
+                </span>
+              </div>
+              <p className="text-xs text-stone-400">
+                Expira: {new Date(c.expires_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -384,6 +488,14 @@ const AdminCalendar = () => {
 
   const handleToggleSlot = async (hour: string) => {
     if (!selectedDate) return;
+    const h = parseInt(hour.split(':')[0]);
+    const isBooked = appointments.some(a => {
+      if (a.date !== selectedDate || a.status !== 'pending') return false;
+      const ah = parseInt(a.time.substring(0, 2));
+      return h === ah || h === ah + 1;
+    });
+    if (isBooked) return; // Prevent toggling if already booked
+
     const newSlots = slots.includes(hour) ? slots.filter(s => s !== hour) : [...slots, hour];
     setSlots(newSlots);
     await api.availability.set({ date: selectedDate, slots: newSlots });
@@ -391,7 +503,8 @@ const AdminCalendar = () => {
 
   const handleComplete = async () => {
     if (!showCompleteModal) return;
-    await api.appointments.complete(showCompleteModal.id, parseFloat(price));
+    const numericPrice = Number(price.replace(/\D/g, ''));
+    await api.appointments.complete(showCompleteModal.id, numericPrice);
     setShowCompleteModal(null);
     setPrice('');
     api.appointments.list().then(setAppointments);
@@ -451,17 +564,30 @@ const AdminCalendar = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
                 <h5 className="text-xs font-mono uppercase text-stone-500 mb-4 tracking-widest">Disponibilidad</h5>
-                <div className="grid grid-cols-3 gap-2">
-                  {['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map(hour => (
-                    <button
-                      key={hour}
-                      onClick={() => handleToggleSlot(hour)}
-                      className={`p-3 rounded-xl text-sm font-medium transition-all ${slots.includes(hour) ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-white text-stone-400 border-stone-200'
-                        } border`}
-                    >
-                      {formatTime(hour)}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-4 gap-2">
+                  {Array.from({ length: 15 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`).map(hour => {
+                    const h = parseInt(hour.split(':')[0]);
+                    const isBooked = appointments.some(a => {
+                      if (a.date !== selectedDate || a.status !== 'pending') return false;
+                      const ah = parseInt(a.time.substring(0, 2));
+                      return h === ah || h === ah + 1;
+                    });
+                    return (
+                      <button
+                        key={hour}
+                        onClick={() => handleToggleSlot(hour)}
+                        title={isBooked ? "Hora reservada" : "Tocar para cambiar disponibilidad"}
+                        className={`p-3 rounded-xl text-sm font-medium transition-all border ${isBooked
+                          ? 'bg-rose-100 text-rose-800 border-rose-200 cursor-not-allowed'
+                          : slots.includes(hour)
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200'
+                            : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'
+                          }`}
+                      >
+                        {formatTime(hour)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -499,9 +625,13 @@ const AdminCalendar = () => {
             <h3 className="text-2xl font-serif mb-4">Completar Cita</h3>
             <p className="text-stone-500 mb-6">Ingresa el monto final cobrado a {showCompleteModal.user_name || showCompleteModal.casual_name}.</p>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={price}
-              onChange={e => setPrice(e.target.value)}
+              onChange={e => {
+                const rawValue = e.target.value.replace(/\D/g, '');
+                setPrice(rawValue ? Number(rawValue).toLocaleString('es-CO') : '');
+              }}
               placeholder="Monto $"
               className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl mb-6 focus:outline-none"
             />
@@ -690,6 +820,8 @@ const AdminServices = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [price, setPrice] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -699,7 +831,15 @@ const AdminServices = () => {
     api.services.list().then(setServices);
   }, []);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setImageUrl('');
+    setPrice('');
+    setEditingId(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || !imageUrl) return;
 
@@ -707,22 +847,35 @@ const AdminServices = () => {
     setError('');
     setSuccess('');
     try {
-      await api.services.create({ name, description, image_url: imageUrl });
-      setName('');
-      setDescription('');
-      setImageUrl('');
-      setSuccess('Servicio agregado correctamente');
+      const numericPrice = Number(price.replace(/\D/g, ''));
+      if (editingId) {
+        await api.services.update(editingId, { name, description, image_url: imageUrl, price: numericPrice });
+        setSuccess('Servicio actualizado correctamente');
+      } else {
+        await api.services.create({ name, description, image_url: imageUrl, price: numericPrice });
+        setSuccess('Servicio agregado correctamente');
+      }
+      resetForm();
       const updated = await api.services.list();
       setServices(updated);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Error al agregar servicio');
+      setError(err.message || (editingId ? 'Error al actualizar servicio' : 'Error al agregar servicio'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleEdit = (service: Service) => {
+    setName(service.name);
+    setDescription(service.description);
+    setImageUrl(service.image_url);
+    setPrice((service.price || '').toString());
+    setEditingId(service.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string) => {
     try {
       await api.services.delete(id);
       const updated = await api.services.list();
@@ -736,7 +889,7 @@ const AdminServices = () => {
     <div className="space-y-8">
       <h3 className="text-3xl font-serif italic">Gestionar Servicios</h3>
 
-      <form onSubmit={handleAdd} className="space-y-4 bg-white p-6 rounded-3xl border border-stone-100">
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-3xl border border-stone-100">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-xs font-mono uppercase text-stone-400 ml-2">Nombre del Servicio</label>
@@ -750,6 +903,22 @@ const AdminServices = () => {
             />
           </div>
           <div className="space-y-1">
+            <label className="text-xs font-mono uppercase text-stone-400 ml-2">Precio</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={price}
+              onChange={e => {
+                // Remove non-digits and allow formatting easily
+                const rawValue = e.target.value.replace(/\D/g, '');
+                setPrice(rawValue ? Number(rawValue).toLocaleString('es-CO') : '');
+              }}
+              placeholder="Ej: 150000"
+              className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:outline-none"
+              required
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
             <label className="text-xs font-mono uppercase text-stone-400 ml-2">Imagen del Servicio</label>
             <div className="relative">
               <input
@@ -791,13 +960,24 @@ const AdminServices = () => {
             required
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-stone-800 text-white p-4 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 font-bold"
-        >
-          {loading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Plus size={20} /> Agregar Servicio</>}
-        </button>
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-stone-800 text-white p-4 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 font-bold hover:bg-stone-700 transition"
+          >
+            {loading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : editingId ? "Guardar Cambios" : <><Plus size={20} /> Agregar Servicio</>}
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="flex-none bg-stone-100 text-stone-600 p-4 rounded-2xl font-bold hover:bg-stone-200 transition"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
       </form>
 
       {error && <p className="text-red-500 text-sm bg-red-50 p-4 rounded-xl border border-red-100">{error}</p>}
@@ -808,12 +988,17 @@ const AdminServices = () => {
           <div key={s.id} className="flex gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-100">
             <img src={s.image_url} className="w-20 h-20 object-cover rounded-xl" referrerPolicy="no-referrer" />
             <div className="flex-1 min-w-0">
-              <p className="font-bold truncate">{s.name}</p>
+              <p className="font-bold truncate">{s.name} <span className="text-rose-600 font-mono text-sm ml-2">${s.price?.toLocaleString() || 0}</span></p>
               <p className="text-stone-500 text-xs line-clamp-2">{s.description}</p>
             </div>
-            <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-full self-start">
-              <Trash2 size={20} />
-            </button>
+            <div className="flex flex-col gap-2 self-start border-l border-stone-100 pl-4">
+              <button type="button" onClick={() => handleEdit(s)} className="text-stone-400 hover:bg-stone-100 p-2 rounded-full transition" title="Editar servicio">
+                <Edit2 size={20} />
+              </button>
+              <button type="button" onClick={() => handleDelete(s.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-full transition" title="Eliminar servicio">
+                <Trash2 size={20} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -830,7 +1015,7 @@ const Booking = ({ user }: { user: User | null }) => {
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [bookedAppointments, setBookedAppointments] = useState<Appointment[]>([]);
   const [success, setSuccess] = useState(false);
   const [pendingAppointment, setPendingAppointment] = useState<Appointment | null>(null);
   const [loadingPending, setLoadingPending] = useState(!!user);
@@ -860,8 +1045,8 @@ const Booking = ({ user }: { user: User | null }) => {
     if (selectedDate) {
       api.availability.get(selectedDate).then(setAvailableSlots);
       api.appointments.list().then(apps => {
-        const booked = apps.filter(a => a.date === selectedDate).map(a => a.time);
-        setBookedSlots(booked);
+        const booked = apps.filter(a => a.date === selectedDate && a.status === 'pending');
+        setBookedAppointments(booked);
       });
     }
   }, [selectedDate]);
@@ -872,7 +1057,7 @@ const Booking = ({ user }: { user: User | null }) => {
       user_id: user?.id,
       casual_name: user ? null : name,
       casual_phone: user ? null : phone,
-      service_id: parseInt(serviceId),
+      service_id: serviceId,
       date: selectedDate,
       time: selectedTime
     });
@@ -973,9 +1158,14 @@ const Booking = ({ user }: { user: User | null }) => {
             >
               <div>
                 <label className="block text-xs font-mono uppercase text-stone-500 mb-4 tracking-widest">Horarios Disponibles</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {availableSlots.map(hour => {
-                    const isBooked = bookedSlots.includes(hour);
+                <div className="grid grid-cols-4 gap-3">
+                  {availableSlots.sort().map(hour => {
+                    const h = parseInt(hour.split(':')[0]);
+                    const isBooked = bookedAppointments.some(a => {
+                      const ah = parseInt(a.time.substring(0, 2));
+                      // Blocked if the interval [h, h+2) overlaps with [ah, ah+2)
+                      return h === ah || h === ah + 1 || h + 1 === ah;
+                    });
                     return (
                       <button
                         key={hour}

@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string;
   phone: string;
   name: string;
   role: 'admin' | 'premium';
@@ -8,18 +8,19 @@ export interface User {
 }
 
 export interface Service {
-  id: number;
+  id: string;
   name: string;
   description: string;
   image_url: string;
+  price: number;
 }
 
 export interface Appointment {
-  id: number;
-  user_id?: number;
+  id: string;
+  user_id?: string;
   casual_name?: string;
   casual_phone?: string;
-  service_id: number;
+  service_id: string;
   service_name?: string;
   user_name?: string;
   date: string;
@@ -29,8 +30,8 @@ export interface Appointment {
 }
 
 export interface Review {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   user_name: string;
   photo_url?: string;
   rating: number;
