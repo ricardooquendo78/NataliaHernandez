@@ -1,5 +1,5 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
+
 import path from "path";
 import mongoose from "mongoose";
 
@@ -276,13 +276,15 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // --- VITE MIDDLEWARE (Only in dev) ---
   if (process.env.NODE_ENV !== "production") {
-    createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    }).then(vite => {
-      app.use(vite.middlewares);
-      app.listen(3000, "0.0.0.0", () => {
-        console.log("Server running on http://localhost:3000");
+    import("vite").then(({ createServer: createViteServer }) => {
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      }).then((vite) => {
+        app.use(vite.middlewares);
+        app.listen(3000, "0.0.0.0", () => {
+          console.log("Server running on http://localhost:3000");
+        });
       });
     });
   }
