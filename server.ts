@@ -276,11 +276,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // --- VITE MIDDLEWARE (Only in dev) ---
   if (process.env.NODE_ENV !== "production") {
-    import("vite").then(({ createServer: createViteServer }) => {
+    const vitePkg = "vite";
+    // @ts-ignore
+    import(vitePkg).then(({ createServer: createViteServer }) => {
       createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
-      }).then((vite) => {
+      }).then((vite: any) => {
         app.use(vite.middlewares);
         app.listen(3000, "0.0.0.0", () => {
           console.log("Server running on http://localhost:3000");
