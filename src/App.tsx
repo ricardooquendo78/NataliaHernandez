@@ -1278,7 +1278,7 @@ const Profile = ({ user, onUpdate }: { user: User, onUpdate: (user: User) => voi
             <Star className="fill-pink-400 text-pink-400" />
             Tu Cita Pink
           </h3>
-          <p className="text-pink-700 text-sm mb-6">Cada 5 citas, ¡la 6ta tiene 50% de descuento!</p>
+          <p className="text-pink-700 text-sm mb-6">Cada 5 citas, ¡la 6ta tiene 25% de descuento!</p>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div
