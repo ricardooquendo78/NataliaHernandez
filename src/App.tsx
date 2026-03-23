@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import fondoImg from './images/fondo.jfif';
 import { User, Service, Appointment, Review } from './types';
 import { api } from './api';
 import {
@@ -239,7 +240,7 @@ const Home = ({ user, onNavigate }: { user: User | null, onNavigate: (page: stri
     <div className="space-y-16 pb-20">
       <section className="relative h-[50vh] rounded-[3rem] overflow-hidden">
         <img
-          src="/src/images/fondo.jfif"
+          src={fondoImg}
           alt="Lashes"
           className="w-full h-full object-cover"
         />
