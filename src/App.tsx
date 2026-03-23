@@ -1384,10 +1384,10 @@ export default function App() {
   if (page === 'login') return <Login onLogin={handleLogin} onBack={() => setPage('home')} />;
 
   return (
-    <div className="min-h-screen bg-[#fffafa] text-stone-800 font-sans selection:bg-rose-200/50">
+    <div className="h-[100dvh] flex flex-col bg-[#fffafa] text-stone-800 font-sans selection:bg-rose-200/50 overflow-hidden">
       {/* Navigation */}
       <nav 
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${isKeyboardOpen ? 'hidden' : 'block'}`}
+        className={`shrink-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] ${isKeyboardOpen ? 'hidden' : 'block'}`}
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div
@@ -1444,7 +1444,8 @@ export default function App() {
       </AnimatePresence>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-28 pb-12">
+      <div className="flex-1 overflow-y-auto w-full relative">
+        <main className="max-w-7xl mx-auto px-6 py-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={page}
@@ -1490,12 +1491,21 @@ export default function App() {
             )}
           </motion.div>
         </AnimatePresence>
-      </main>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-stone-100 bg-white py-8">
+          <div className="max-w-7xl mx-auto px-6 text-center">
+            <p className="text-xl font-serif italic mb-2">Natalia Hernandez</p>
+            <p className="text-stone-400 text-xs font-mono uppercase tracking-widest">© 2026 Todos los derechos reservados</p>
+          </div>
+        </footer>
+      </div>
 
       {/* Admin Bottom Navigation */}
       {page === 'admin' && user?.role === 'admin' && (
         <div 
-          className={`fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-stone-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] gap-4 overflow-x-auto pb-[max(1rem,env(safe-area-inset-bottom))] ${isKeyboardOpen ? 'hidden' : 'flex'}`}
+          className={`shrink-0 z-50 bg-white/90 backdrop-blur-xl border-t border-stone-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex gap-4 overflow-x-auto pb-[max(1rem,env(safe-area-inset-bottom))] ${isKeyboardOpen ? 'hidden' : 'flex'}`}
         >
           {[
             { id: 'calendar', label: 'Calendario', icon: Calendar },
@@ -1520,14 +1530,6 @@ export default function App() {
           ))}
         </div>
       )}
-
-      {/* Footer */}
-      <footer className={`border-t border-stone-100 bg-white pt-8 ${page === 'admin' ? 'pb-32' : 'pb-8'}`}>
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-xl font-serif italic mb-2">Natalia Hernandez</p>
-          <p className="text-stone-400 text-xs font-mono uppercase tracking-widest">© 2026 Todos los derechos reservados</p>
-        </div>
-      </footer>
     </div>
   );
 }
