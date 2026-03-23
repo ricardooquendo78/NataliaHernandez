@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Dancing Script", cursive, serif;
+}
+
+@layer utilities {
+  .font-serif {
+    font-weight: 700 !important;
+  }
+}

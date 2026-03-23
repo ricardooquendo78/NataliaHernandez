@@ -44,7 +44,7 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 // --- COMPONENTS ---
 
-const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
+const Login = ({ onLogin, onBack }: { onLogin: (user: User) => void; onBack: () => void }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +86,14 @@ const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-stone-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-stone-100 p-4 relative">
+      <button 
+        onClick={onBack} 
+        className="absolute top-6 left-6 md:top-10 md:left-10 text-stone-500 hover:text-stone-800 flex items-center gap-2 font-medium transition-colors hover:-translate-x-1 duration-300"
+      >
+        <ChevronLeft size={20} />
+        Volver
+      </button>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -216,7 +223,7 @@ const ServicesList = ({ onBook }: { onBook?: () => void }) => {
           </div>
           <div className="p-8 flex-1 flex flex-col">
             <div className="flex justify-between items-start mb-4 gap-4">
-              <h3 className="text-2xl font-serif">{service.name}</h3>
+              <h3 className="text-2xl font-sans font-bold text-rose-950 tracking-tight">{service.name}</h3>
               <span className="text-rose-800 font-bold text-xl shrink-0">${service.price?.toLocaleString() || 0}</span>
             </div>
             <p className="text-stone-500 text-sm mb-6 flex-1">{service.description}</p>
@@ -1375,7 +1382,7 @@ export default function App() {
     setPage('home');
   };
 
-  if (page === 'login') return <Login onLogin={handleLogin} />;
+  if (page === 'login') return <Login onLogin={handleLogin} onBack={() => setPage('home')} />;
 
   return (
     <div className="min-h-screen bg-[#fffafa] text-stone-800 font-sans selection:bg-rose-200/50">
