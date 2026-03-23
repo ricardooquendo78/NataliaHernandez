@@ -397,30 +397,7 @@ const ReviewsSection = ({ user }: { user: User | null }) => {
   );
 };
 
-const AdminDashboard = () => {
-  const [tab, setTab] = useState<'calendar' | 'financials' | 'clients' | 'services' | 'history' | 'recoveries'>('calendar');
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-
-  useEffect(() => {
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        setIsKeyboardOpen(true);
-      }
-    };
-    const handleFocusOut = () => {
-      setIsKeyboardOpen(false);
-    };
-
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
-
-    return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
-    };
-  }, []);
-
+const AdminDashboard = ({ tab, setTab }: { tab: string, setTab: (t: any) => void }) => {
   return (
     <div className="space-y-8">
       <div className="bg-white p-4 sm:p-8 rounded-3xl shadow-sm border border-stone-100 min-h-[60vh]">
@@ -431,40 +408,6 @@ const AdminDashboard = () => {
         {tab === 'services' && <AdminServices />}
         {tab === 'recoveries' && <AdminRecoveries />}
       </div>
-
-      <AnimatePresence>
-        {!isKeyboardOpen && (
-          <motion.div 
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-stone-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex gap-4 overflow-x-auto pb-[max(1rem,env(safe-area-inset-bottom))]"
-          >
-            {[
-              { id: 'calendar', label: 'Calendario', icon: Calendar },
-              { id: 'history', label: 'Historial', icon: CheckCircle },
-              { id: 'financials', label: 'Finanzas', icon: DollarSign },
-              { id: 'clients', label: 'Clientas', icon: UserIcon },
-              { id: 'services', label: 'Servicios', icon: Settings },
-              { id: 'recoveries', label: 'Recuperaciones', icon: Key },
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all duration-300 ${
-                  tab === t.id 
-                    ? 'bg-gradient-to-r from-rose-800 to-rose-950 text-white shadow-xl shadow-rose-900/20' 
-                    : 'bg-white text-stone-500 border border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <t.icon size={18} />
-                <span className="font-medium">{t.label}</span>
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -1399,6 +1342,7 @@ export default function App() {
   const [page, setPage] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [adminTab, setAdminTab] = useState<'calendar' | 'financials' | 'clients' | 'services' | 'history' | 'recoveries'>('calendar');
 
   useEffect(() => {
     const saved = localStorage.getItem('user');
@@ -1442,46 +1386,38 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#fffafa] text-stone-800 font-sans selection:bg-rose-200/50">
       {/* Navigation */}
-      <AnimatePresence>
-        {!isKeyboardOpen && (
-          <motion.nav 
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            exit={{ y: -100 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-xl z-50 border-b border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
+      <nav 
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-transform duration-300 ${isKeyboardOpen ? '-translate-y-full' : 'translate-y-0'}`}
+      >
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div
+            onClick={() => setPage('home')}
+            className="text-2xl font-serif italic cursor-pointer tracking-tighter"
           >
-            <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-              <div
-                onClick={() => setPage('home')}
-                className="text-2xl font-serif italic cursor-pointer tracking-tighter"
-              >
-                Natalia Hernandez
-              </div>
+            Natalia Hernandez
+          </div>
 
-              <div className="hidden md:flex items-center gap-8">
-                <button onClick={() => setPage('home')} className="text-sm font-medium hover:text-rose-600 transition-colors">Inicio</button>
-                {user?.role !== 'admin' && <button onClick={() => setPage('booking')} className="text-sm font-medium hover:text-rose-600 transition-colors">Citas</button>}
-                {user?.role === 'admin' && <button onClick={() => setPage('admin')} className="text-sm font-medium hover:text-rose-600 transition-colors">Admin</button>}
-                {user ? (
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setPage('profile')} className="w-10 h-10 bg-stone-100 rounded-full flex items-center justify-center overflow-hidden border border-stone-200">
-                      {user.photo_url ? <img src={user.photo_url} className="w-full h-full object-cover" /> : <UserIcon size={20} />}
-                    </button>
-                    <button onClick={handleLogout} className="text-stone-400 hover:text-red-500"><LogOut size={20} /></button>
-                  </div>
-                ) : (
-                  <button onClick={() => setPage('login')} className="bg-gradient-to-r from-rose-800 to-rose-950 text-white px-6 py-2 rounded-full text-sm font-medium shadow-md shadow-rose-900/10 active:scale-95 transition-all">Entrar</button>
-                )}
+          <div className="hidden md:flex items-center gap-8">
+            <button onClick={() => setPage('home')} className="text-sm font-medium hover:text-rose-600 transition-colors">Inicio</button>
+            {user?.role !== 'admin' && <button onClick={() => setPage('booking')} className="text-sm font-medium hover:text-rose-600 transition-colors">Citas</button>}
+            {user?.role === 'admin' && <button onClick={() => setPage('admin')} className="text-sm font-medium hover:text-rose-600 transition-colors">Admin</button>}
+            {user ? (
+              <div className="flex items-center gap-4">
+                <button onClick={() => setPage('profile')} className="w-10 h-10 bg-stone-100 rounded-full flex items-center justify-center overflow-hidden border border-stone-200">
+                  {user.photo_url ? <img src={user.photo_url} className="w-full h-full object-cover" /> : <UserIcon size={20} />}
+                </button>
+                <button onClick={handleLogout} className="text-stone-400 hover:text-red-500"><LogOut size={20} /></button>
               </div>
+            ) : (
+              <button onClick={() => setPage('login')} className="bg-gradient-to-r from-rose-800 to-rose-950 text-white px-6 py-2 rounded-full text-sm font-medium shadow-md shadow-rose-900/10 active:scale-95 transition-all">Entrar</button>
+            )}
+          </div>
 
-              <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <X /> : <Menu />}
-              </button>
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </nav>
 
       {/* Mobile Menu */}
       <AnimatePresence>
@@ -1519,7 +1455,7 @@ export default function App() {
           >
             {page === 'home' && <Home user={user} onNavigate={setPage} />}
             {page === 'booking' && <Booking user={user} />}
-            {page === 'admin' && user?.role === 'admin' && <AdminDashboard />}
+            {page === 'admin' && user?.role === 'admin' && <AdminDashboard tab={adminTab} setTab={setAdminTab} />}
             {page === 'profile' && user && <Profile user={user} onUpdate={setUser} />}
             {page === 'services' && (
               <div className="space-y-12">
@@ -1555,6 +1491,35 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Admin Bottom Navigation */}
+      {page === 'admin' && user?.role === 'admin' && (
+        <div 
+          className={`fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-stone-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex gap-4 overflow-x-auto pb-[max(1rem,env(safe-area-inset-bottom))] transition-transform duration-300 ${isKeyboardOpen ? 'translate-y-full' : 'translate-y-0'}`}
+        >
+          {[
+            { id: 'calendar', label: 'Calendario', icon: Calendar },
+            { id: 'history', label: 'Historial', icon: CheckCircle },
+            { id: 'financials', label: 'Finanzas', icon: DollarSign },
+            { id: 'clients', label: 'Clientas', icon: UserIcon },
+            { id: 'services', label: 'Servicios', icon: Settings },
+            { id: 'recoveries', label: 'Recuperaciones', icon: Key },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setAdminTab(t.id as any)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all duration-300 ${
+                adminTab === t.id 
+                  ? 'bg-gradient-to-r from-rose-800 to-rose-950 text-white shadow-xl shadow-rose-900/20' 
+                  : 'bg-white text-stone-500 border border-stone-200 hover:bg-stone-50'
+              }`}
+            >
+              <t.icon size={18} />
+              <span className="font-medium">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Footer */}
       <footer className={`border-t border-stone-100 bg-white pt-8 ${page === 'admin' ? 'pb-32' : 'pb-8'}`}>
