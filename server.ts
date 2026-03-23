@@ -14,14 +14,26 @@ mongoose.set('toJSON', {
   }
 });
 
-mongoose.connect(MONGO_URI, { family: 4 })
-  .then(() => {
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected || mongoose.connection.readyState >= 1) {
+    isConnected = true;
+    return;
+  }
+  
+  try {
+    const dbUri = process.env.MONGO_URI || MONGO_URI;
+    await mongoose.connect(dbUri, { family: 4 });
+    isConnected = true;
     console.log('Connected to MongoDB Atlas');
     seedDatabase();
-  })
-  .catch(err => {
+  } catch (err: any) {
     console.error('MongoDB connection error. Por favor asegúrate de que tu IP esté permitida en MongoDB Atlas (Network Access -> Allow from Anywhere). Error:', err.message);
-  });
+  }
+};
+
+connectDB();
 
 // Schemas
 const User = mongoose.model('User', new mongoose.Schema({
