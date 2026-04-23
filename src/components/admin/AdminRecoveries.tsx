@@ -22,7 +22,7 @@ export const AdminRecoveries = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-bold text-lg">{c.name || 'Clienta'}</p>
-                  <p className="text-sm text-stone-500">{c.phone}</p>
+                  <p className="text-sm text-stone-500">{c.email}</p>
                 </div>
                 <span className="bg-rose-100 text-rose-800 font-mono font-bold px-3 py-1 rounded-xl tracking-widest">
                   {c.code}

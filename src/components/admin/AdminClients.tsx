@@ -28,7 +28,17 @@ export const AdminClients = () => {
                   </div>
                   <div>
                     <p className="font-bold text-lg leading-tight">{u.name}</p>
-                    <p className="text-sm text-stone-500">{u.phone}</p>
+                    <p className="text-xs text-stone-500">{u.email}</p>
+                    {u.phone && (
+                      <a 
+                        href={`https://wa.me/57${u.phone.replace(/\D/g, '')}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs text-rose-600 font-medium hover:underline flex items-center gap-1"
+                      >
+                        {u.phone}
+                      </a>
+                    )}
                   </div>
                 </div>
                 {isNextPink && (

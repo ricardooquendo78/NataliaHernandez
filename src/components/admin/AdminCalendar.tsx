@@ -139,7 +139,16 @@ export const AdminCalendar = () => {
                       <div>
                         <p className="font-bold text-stone-800">{formatTime(a.time)} - {a.user_name || a.casual_name}</p>
                         <p className="text-xs text-stone-500">{a.service_name}</p>
-                        <p className="text-xs text-stone-400">{a.casual_phone || 'Premium'}</p>
+                        {(a as any).user_phone && (
+                          <a 
+                            href={`https://wa.me/57${(a as any).user_phone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-[10px] text-rose-600 font-medium hover:underline flex items-center gap-1"
+                          >
+                            {(a as any).user_phone}
+                          </a>
+                        )}
                       </div>
                       <button
                         onClick={() => setShowCompleteModal(a)}

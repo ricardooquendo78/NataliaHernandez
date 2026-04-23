@@ -11,15 +11,16 @@ interface ProfileProps {
 
 export const Profile = ({ user, onUpdate }: ProfileProps) => {
   const [name, setName] = useState(user.name);
-  const [phone, setPhone] = useState(user.phone);
+  const [email, setEmail] = useState(user.email);
+  const [phone, setPhone] = useState(user.phone || '');
   const [photoUrl, setPhotoUrl] = useState(user.photo_url || '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await api.users.update(user.id, { name, phone, photo_url: photoUrl });
-    onUpdate({ ...user, name, phone, photo_url: photoUrl });
+    await api.users.update(user.id, { name, email, phone, photo_url: photoUrl });
+    onUpdate({ ...user, name, email, phone, photo_url: photoUrl });
     setSaving(false);
   };
 
@@ -72,6 +73,15 @@ export const Profile = ({ user, onUpdate }: ProfileProps) => {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
+              className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Correo Electrónico</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:outline-none"
             />
           </div>

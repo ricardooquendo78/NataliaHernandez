@@ -11,6 +11,7 @@ interface LoginProps {
 
 export const Login = ({ onLogin, onBack }: LoginProps) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -24,19 +25,17 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
     setSuccess('');
     try {
       if (mode === 'register') {
-        const user = await api.auth.register({ phone, password, name });
+        const user = await api.auth.register({ email, phone, password, name });
         onLogin(user);
       } else if (mode === 'login') {
-        const user = await api.auth.login({ phone, password });
+        const user = await api.auth.login({ email, password });
         onLogin(user);
       } else if (mode === 'forgot') {
-        const res = await api.auth.forgotPassword({ phone });
+        const res = await api.auth.forgotPassword({ email });
         setSuccess(res.message);
-        // Open WhatsApp to request the code
-        window.open(`https://wa.me/573233597721?text=${encodeURIComponent(`Hola Natalia, olvidé mi contraseña. Mi número es ${phone}. ¿Me regalas mi código?`)}`, '_blank');
         setMode('reset');
       } else if (mode === 'reset') {
-        const res = await api.auth.resetPassword({ phone, code, newPassword: password });
+        const res = await api.auth.resetPassword({ email, code, newPassword: password });
         setSuccess(res.message);
         setTimeout(() => {
           setMode('login');
@@ -70,7 +69,7 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
 
         {mode === 'forgot' && (
           <p className="text-stone-500 text-sm mb-6 text-center leading-relaxed">
-            Ingresa tu teléfono y pídele tu código de seguridad directamente a la administradora.
+            Ingresa tu correo y te enviaremos un código de recuperación.
           </p>
         )}
 
@@ -89,16 +88,28 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
           )}
 
           <div>
-            <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Teléfono</label>
+            <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Correo Electrónico</label>
             <input
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
               required
               disabled={mode === 'reset'}
             />
           </div>
+
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-mono uppercase text-stone-500 mb-1">Teléfono (WhatsApp)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
+              />
+            </div>
+          )}
 
           {mode === 'reset' && (
             <div>
@@ -147,7 +158,7 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
             type="submit"
             className="w-full bg-gradient-to-r from-rose-800 to-rose-950 text-white p-4 rounded-xl font-medium hover:shadow-lg hover:shadow-rose-950/20 transition-all active:scale-[0.98]"
           >
-            {mode === 'register' ? 'Registrarse' : mode === 'forgot' ? 'Solicitar a Natalia por WSP' : mode === 'reset' ? 'Guardar y Entrar' : 'Iniciar Sesión'}
+            {mode === 'register' ? 'Registrarse' : mode === 'forgot' ? 'Enviar Código' : mode === 'reset' ? 'Guardar y Entrar' : 'Iniciar Sesión'}
           </button>
         </form>
 

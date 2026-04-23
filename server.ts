@@ -37,7 +37,8 @@ connectDB();
 
 // Schemas
 const User = mongoose.model('User', new mongoose.Schema({
-  phone: { type: String, unique: true, required: true },
+  email: { type: String, unique: true, required: true },
+  phone: String,
   password: { type: String, required: true },
   name: String,
   role: { type: String, default: 'premium' },
@@ -69,7 +70,7 @@ const Availability = mongoose.model('Availability', new mongoose.Schema({
 }));
 
 const PasswordReset = mongoose.model('PasswordReset', new mongoose.Schema({
-  phone: { type: String, unique: true },
+  email: { type: String, unique: true },
   code: String,
   expires_at: Date
 }));
@@ -84,9 +85,9 @@ const Review = mongoose.model('Review', new mongoose.Schema({
 async function seedDatabase() {
   const adminExists = await User.findOne({ role: "admin" });
   if (!adminExists) {
-    await User.create({ phone: "3233597721", password: "3112", name: "natalia hernandez", role: "admin" });
+    await User.create({ email: "nati3112hernandez@gmail.com", phone: "3233597721", password: "3112", name: "natalia hernandez", role: "admin" });
   } else {
-    await User.updateOne({ role: "admin" }, { phone: "3233597721", password: "3112" });
+    await User.updateOne({ role: "admin" }, { email: "nati3112hernandez@gmail.com", phone: "3233597721", password: "3112" });
   }
 
   const serviceCount = await Service.countDocuments();
@@ -114,8 +115,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Auth
   app.post("/api/auth/login", async (req, res) => {
-    const { phone, password } = req.body;
-    const user = await User.findOne({ phone, password });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email, password });
     if (user) {
       const userJson = user.toJSON() as any;
       delete userJson.password;
@@ -126,29 +127,29 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
   });
 
   app.post("/api/auth/register", async (req, res) => {
-    const { phone, password, name } = req.body;
+    const { email, phone, password, name } = req.body;
     try {
-      const user = await User.create({ phone, password, name, role: 'premium' });
+      const user = await User.create({ email, phone, password, name, role: 'premium' });
       const userJson = user.toJSON() as any;
       delete userJson.password;
       res.json(userJson);
     } catch (e) {
-      res.status(400).json({ error: "El teléfono ya está registrado" });
+      res.status(400).json({ error: "El correo ya está registrado" });
     }
   });
 
   app.post("/api/auth/forgot-password", async (req, res) => {
-    const { phone } = req.body;
-    const user = await User.findOne({ phone });
+    const { email } = req.body;
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ error: "No existe un usuario con este teléfono" });
+      return res.status(400).json({ error: "No existe un usuario con este correo" });
     }
     const code = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit code
     const expires_at = new Date(Date.now() + 15 * 60000); // 15 mins
-    await PasswordReset.findOneAndUpdate({ phone }, { code, expires_at }, { upsert: true });
+    await PasswordReset.findOneAndUpdate({ email }, { code, expires_at }, { upsert: true });
 
     console.log(`\n========================================`);
-    console.log(`📲 MOCK WHATSAPP MESSAGE TO: ${phone}`);
+    console.log(`📧 MOCK EMAIL MESSAGE TO: ${email}`);
     console.log(`Tu código de recuperación es: ${code}`);
     console.log(`========================================\n`);
 
@@ -156,16 +157,16 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
   });
 
   app.post("/api/auth/reset-password", async (req, res) => {
-    const { phone, code, newPassword } = req.body;
-    const reset = await PasswordReset.findOne({ phone, code });
+    const { email, code, newPassword } = req.body;
+    const reset = await PasswordReset.findOne({ email, code });
     if (!reset) {
       return res.status(400).json({ error: "Código incorrecto" });
     }
     if (new Date(reset.expires_at as any) < new Date()) {
       return res.status(400).json({ error: "El código ha expirado" });
     }
-    await User.updateOne({ phone }, { password: newPassword });
-    await PasswordReset.deleteOne({ phone });
+    await User.updateOne({ email }, { password: newPassword });
+    await PasswordReset.deleteOne({ email });
     res.json({ success: true, message: "Contraseña actualizada" });
   });
 
@@ -175,8 +176,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     
     // Attach user names manually (or could use aggregate)
     const codesWithNames = await Promise.all(codesDocs.map(async doc => {
-      const u = await User.findOne({ phone: doc.phone });
-      return { ...doc, name: u?.name || '' };
+      const u = await User.findOne({ email: doc.email });
+      return { ...doc, name: u?.name || '', email: doc.email };
     }));
     
     res.json(codesWithNames);
@@ -227,6 +228,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     const results = apps.map((a: any) => {
       const json = a.toJSON();
       json.user_name = a.user_id?.name || json.casual_name || null;
+      json.user_phone = a.user_id?.phone || json.casual_phone || null;
       json.service_name = a.service_id?.name || null;
       // Flatten references for the UI
       json.user_id = a.user_id?._id || a.user_id?.id || null;
@@ -266,7 +268,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Promotions
   app.get("/api/promotions", async (req, res) => {
-    res.json(await User.find({ role: 'premium' }, 'name phone appointment_count photo_url'));
+    res.json(await User.find({ role: 'premium' }, 'name email phone appointment_count photo_url'));
   });
 
   // Reviews

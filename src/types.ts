@@ -1,6 +1,7 @@
 export interface User {
   id: string;
-  phone: string;
+  email: string;
+  phone?: string;
   name: string;
   role: 'admin' | 'premium';
   photo_url?: string;
