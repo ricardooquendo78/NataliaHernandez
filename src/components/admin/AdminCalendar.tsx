@@ -138,17 +138,27 @@ export const AdminCalendar = () => {
                     <div key={a.id} className="bg-white p-4 rounded-2xl border border-stone-200 flex justify-between items-center">
                       <div>
                         <p className="font-bold text-stone-800">{formatTime(a.time)} - {a.user_name || a.casual_name}</p>
-                        <p className="text-xs text-stone-500">{a.service_name}</p>
-                        {(a as any).user_phone && (
-                          <a 
-                            href={`https://wa.me/57${(a as any).user_phone.replace(/\D/g, '')}`} 
-                            target="_blank" 
+                        <p className="text-xs text-stone-500 mb-2">{a.service_name}</p>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {(a as any).user_phone && (
+                            <a 
+                              href={`https://wa.me/57${(a as any).user_phone.replace(/\D/g, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-medium hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                            >
+                              WhatsApp
+                            </a>
+                          )}
+                          <a
+                            href={`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Cita: ' + (a.user_name || a.casual_name))}&dates=${a.date.replace(/-/g, '')}T${a.time.replace(/:/g, '')}00/${a.date.replace(/-/g, '')}T${(parseInt(a.time.split(':')[0]) + 2).toString().padStart(2, '0')}${a.time.split(':')[1]}00&details=${encodeURIComponent('Servicio: ' + a.service_name + '\nTeléfono: ' + ((a as any).user_phone || 'No proporcionado'))}&location=${encodeURIComponent('Avenida 35 # 55 - 71 Niquia, Bello')}`}
+                            target="_blank"
                             rel="noreferrer"
-                            className="text-[10px] text-rose-600 font-medium hover:underline flex items-center gap-1"
+                            className="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium hover:bg-blue-100 transition-colors flex items-center gap-1"
                           >
-                            {(a as any).user_phone}
+                            Google Calendar
                           </a>
-                        )}
+                        </div>
                       </div>
                       <button
                         onClick={() => setShowCompleteModal(a)}

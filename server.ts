@@ -338,6 +338,17 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     const time12h = formatTimeTo12h(time);
 
     try {
+      // Create Google Calendar Link
+      const dateParts = date.replace(/-/g, '');
+      const timeParts = time.replace(/:/g, '');
+      const startDateTime = `${dateParts}T${timeParts}00`;
+      
+      // Calculate end time (2 hours later)
+      const endHour = (parseInt(time.split(':')[0]) + 2).toString().padStart(2, '0');
+      const endDateTime = `${dateParts}T${endHour}${time.split(':')[1]}00`;
+      
+      const gCalUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Cita: ' + clientName)}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent('Servicio: ' + serviceName + '\nTeléfono: ' + (user?.phone || casual_phone || 'No proporcionado'))}&location=${encodeURIComponent('Avenida 35 # 55 - 71 Niquia, Bello')}`;
+
       // Email to Admin
       await sendEmail({
         to: process.env.EMAIL_USER || "nati3112hernandez@gmail.com",
@@ -350,6 +361,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
             <p><strong>Fecha:</strong> ${date}</p>
             <p><strong>Hora:</strong> ${time12h}</p>
             <p><strong>Teléfono:</strong> ${user?.phone || casual_phone || 'No proporcionado'}</p>
+            <div style="margin-top: 25px;">
+              <a href="${gCalUrl}" style="background: #1a73e8; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                📅 Añadir a Google Calendar
+              </a>
+            </div>
           </div>
         `
       });
