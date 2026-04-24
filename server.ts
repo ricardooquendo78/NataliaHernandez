@@ -96,15 +96,21 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }) {
+  const fromEmail = process.env.EMAIL_USER || 'nati3112hernandez@gmail.com';
+  console.log(`[Email] Intentando enviar:`);
+  console.log(`       De: ${fromEmail}`);
+  console.log(`       Para: ${to}`);
+  
   try {
-    await transporter.sendMail({
-      from: `"Natalia Hernandez" <${process.env.EMAIL_USER || 'nati3112hernandez@gmail.com'}>`,
+    const info = await transporter.sendMail({
+      from: `"Natalia Hernandez" <${fromEmail}>`,
       to,
       subject,
       html
     });
-  } catch (error) {
-    console.error("Error sending email:", error);
+    console.log(`[Email] ✅ Confirmación de Gmail: ${info.response}`);
+  } catch (error: any) {
+    console.error(`[Email] ❌ ERROR:`, error.message);
   }
 }
 
