@@ -119,6 +119,15 @@ async function sendEmail({ to, subject, html }: { to: string, subject: string, h
   }
 }
 
+function formatTimeTo12h(time24: string) {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  const h = parseInt(hours);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
 async function seedDatabase() {
   const adminExists = await User.findOne({ role: "admin" });
   if (!adminExists) {
@@ -142,15 +151,6 @@ async function seedDatabase() {
       price: 80000
     });
   }
-}
-
-function formatTimeTo12h(time24: string) {
-  if (!time24) return '';
-  const [hours, minutes] = time24.split(':');
-  const h = parseInt(hours);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return `${String(h12).padStart(2, '0')}:${minutes} ${ampm}`;
 }
 
 const app = express();
@@ -330,9 +330,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     });
 
     // Get info for email
-    const user = user_id ? await User.findById(user_id) : null;
+    const user = (user_id && mongoose.isValidObjectId(user_id)) ? await User.findById(user_id) : null;
     const service = await Service.findById(service_id);
-    const clientName = user?.name || casual_name;
+    const clientName = user?.name || casual_name || 'Cliente Casual';
     const clientEmail = user?.email;
     const serviceName = service?.name || "Servicio de Pestañas";
     const time12h = formatTimeTo12h(time);
@@ -378,7 +378,6 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
       }
     } catch (emailError) {
       console.error("Error enviando notificaciones:", emailError);
-      // No bloqueamos la respuesta exitosa si la cita se creó, pero lo registramos
     }
 
     res.json({ success: true });
