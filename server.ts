@@ -372,6 +372,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
       // Email to Client
       if (clientEmail) {
+        const clientGCalUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Mi Cita con Natalia Hernandez')}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent('Servicio: ' + serviceName + '\nPor favor llegar 5 minutos antes.')}&location=${encodeURIComponent('Avenida 35 # 55 - 71 Niquia, Bello')}`;
+
         await sendEmail({
           to: clientEmail,
           subject: "📅 Tu cita ha sido agendada - Natalia Hernandez",
@@ -385,6 +387,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
                 <p style="margin: 5px 0;"><strong>Hora:</strong> ${time12h}</p>
               </div>
               <p>Recuerda llegar 5 minutos antes de tu cita. Si necesitas cancelar o reprogramar, por favor avísanos con tiempo.</p>
+              
+              <div style="margin: 25px 0; text-align: center;">
+                <a href="${clientGCalUrl}" style="background: #be123c; color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+                  📅 Agendar en mi Calendario
+                </a>
+              </div>
+
               <p>¡Te esperamos!</p>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
               <p style="font-size: 12px; color: #888; text-align: center;">Avenida 35 # 55 - 71 Niquia, Bello</p>
