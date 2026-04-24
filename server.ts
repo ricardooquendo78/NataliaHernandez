@@ -144,6 +144,15 @@ async function seedDatabase() {
   }
 }
 
+function formatTimeTo12h(time24: string) {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  const h = parseInt(hours);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${minutes} ${ampm}`;
+}
+
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -326,6 +335,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     const clientName = user?.name || casual_name;
     const clientEmail = user?.email;
     const serviceName = service?.name || "Servicio de Pestañas";
+    const time12h = formatTimeTo12h(time);
 
     try {
       // Email to Admin
@@ -338,7 +348,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
             <p><strong>Cliente:</strong> ${clientName}</p>
             <p><strong>Servicio:</strong> ${serviceName}</p>
             <p><strong>Fecha:</strong> ${date}</p>
-            <p><strong>Hora:</strong> ${time}</p>
+            <p><strong>Hora:</strong> ${time12h}</p>
             <p><strong>Teléfono:</strong> ${user?.phone || casual_phone || 'No proporcionado'}</p>
           </div>
         `
@@ -356,7 +366,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
               <div style="background: #fff1f2; padding: 20px; border-radius: 15px; margin: 20px 0;">
                 <p style="margin: 5px 0;"><strong>Servicio:</strong> ${serviceName}</p>
                 <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
-                <p style="margin: 5px 0;"><strong>Hora:</strong> ${time}</p>
+                <p style="margin: 5px 0;"><strong>Hora:</strong> ${time12h}</p>
               </div>
               <p>Recuerda llegar 5 minutos antes de tu cita. Si necesitas cancelar o reprogramar, por favor avísanos con tiempo.</p>
               <p>¡Te esperamos!</p>
