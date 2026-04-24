@@ -25,6 +25,10 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
     setSuccess('');
     try {
       if (mode === 'register') {
+        if (phone.length !== 10) {
+          setError('El número de teléfono debe tener exactamente 10 dígitos');
+          return;
+        }
         const user = await api.auth.register({ email, phone, password, name });
         onLogin(user);
       } else if (mode === 'login') {
@@ -105,8 +109,12 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
               <input
                 type="tel"
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="Ej: 3001234567"
                 className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
+                required
+                pattern="[0-9]{10}"
+                title="El número de teléfono debe tener exactamente 10 dígitos"
               />
             </div>
           )}
