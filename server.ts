@@ -3,8 +3,11 @@ import express from "express";
 import path from "path";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
-const MONGO_URI = "mongodb://nataliahernandez3112_db_user:5mDm1LW6PZN7kuor@ac-d5ynhin-shard-00-00.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-01.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-02.lzmvwzv.mongodb.net:27017/natalia?ssl=true&authSource=admin&replicaSet=atlas-iulro6-shard-0";
+dotenv.config();
+
+const MONGO_URI = process.env.MONGO_URI || "mongodb://nataliahernandez3112_db_user:5mDm1LW6PZN7kuor@ac-d5ynhin-shard-00-00.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-01.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-02.lzmvwzv.mongodb.net:27017/natalia?ssl=true&authSource=admin&replicaSet=atlas-iulro6-shard-0";
 
 // Mongoose config
 mongoose.set('toJSON', {
@@ -87,15 +90,15 @@ const Review = mongoose.model('Review', new mongoose.Schema({
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'nati3112hernandez@gmail.com',
-    pass: 'eocc sscm kstz fehv'
+    user: process.env.EMAIL_USER || 'nati3112hernandez@gmail.com',
+    pass: process.env.EMAIL_PASS || 'eocc sscm kstz fehv'
   }
 });
 
 async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }) {
   try {
     await transporter.sendMail({
-      from: '"Natalia Hernandez" <nati3112hernandez@gmail.com>',
+      from: `"Natalia Hernandez" <${process.env.EMAIL_USER || 'nati3112hernandez@gmail.com'}>`,
       to,
       subject,
       html
@@ -312,7 +315,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
     // Email to Admin
     sendEmail({
-      to: "nati3112hernandez@gmail.com",
+      to: process.env.EMAIL_USER || "nati3112hernandez@gmail.com",
       subject: `📅 Nueva Cita: ${clientName}`,
       html: `
         <div style="font-family: sans-serif; color: #444;">
