@@ -88,18 +88,21 @@ const Review = mongoose.model('Review', new mongoose.Schema({
 
 // Email Config
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL
   auth: {
     user: process.env.EMAIL_USER || 'nati3112hernandez@gmail.com',
     pass: process.env.EMAIL_PASS || 'eocc sscm kstz fehv'
+  },
+  tls: {
+    rejectUnauthorized: false // Helps in some environments
   }
 });
 
 async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }) {
   const fromEmail = process.env.EMAIL_USER || 'nati3112hernandez@gmail.com';
-  console.log(`[Email] Intentando enviar:`);
-  console.log(`       De: ${fromEmail}`);
-  console.log(`       Para: ${to}`);
+  console.log(`[Email] Intentando enviar a: ${to}`);
   
   try {
     const info = await transporter.sendMail({
@@ -108,9 +111,11 @@ async function sendEmail({ to, subject, html }: { to: string, subject: string, h
       subject,
       html
     });
-    console.log(`[Email] ✅ Confirmación de Gmail: ${info.response}`);
+    console.log(`[Email] ✅ Enviado: ${info.response}`);
+    return info;
   } catch (error: any) {
     console.error(`[Email] ❌ ERROR:`, error.message);
+    throw error; // Throw so we can catch it in the routes
   }
 }
 
@@ -166,11 +171,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
       delete userJson.password;
 
       // Welcome Email
-      sendEmail({
+      await sendEmail({
         to: email,
         subject: "✨ Bienvenida a Natalia Hernandez",
         html: `
-          <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; rounded: 20px;">
+          <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
             <h1 style="color: #be123c; font-style: italic;">¡Hola ${name}!</h1>
             <p>Bienvenida a nuestra comunidad. Estamos felices de tenerte con nosotros.</p>
             <p>Ahora puedes agendar tus citas de pestañas de forma fácil y rápida desde nuestra plataforma.</p>
@@ -201,22 +206,25 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     await PasswordReset.findOneAndUpdate({ email }, { code, expires_at }, { upsert: true });
 
     // Send Real Email
-    sendEmail({
-      to: email,
-      subject: "🔑 Código de recuperación - Natalia Hernandez",
-      html: `
-        <div style="font-family: sans-serif; color: #444; text-align: center; padding: 40px; background: #fafafa;">
-          <h2 style="color: #be123c;">Recuperación de Contraseña</h2>
-          <p>Tu código de seguridad es:</p>
-          <div style="font-size: 32px; font-weight: bold; letter-spacing: 10px; color: #1c1917; margin: 20px 0;">
-            ${code}
+    try {
+      await sendEmail({
+        to: email,
+        subject: "🔑 Código de recuperación - Natalia Hernandez",
+        html: `
+          <div style="font-family: sans-serif; color: #444; text-align: center; padding: 40px; background: #fafafa;">
+            <h2 style="color: #be123c;">Recuperación de Contraseña</h2>
+            <p>Tu código de seguridad es:</p>
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 10px; color: #1c1917; margin: 20px 0;">
+              ${code}
+            </div>
+            <p style="font-size: 12px; color: #888;">Este código expirará en 15 minutos.</p>
           </div>
-          <p style="font-size: 12px; color: #888;">Este código expirará en 15 minutos.</p>
-        </div>
-      `
-    });
-
-    res.json({ success: true, message: "Código enviado a tu correo" });
+        `
+      });
+      res.json({ success: true, message: "Código enviado a tu correo" });
+    } catch (error: any) {
+      res.status(500).json({ error: "Error al enviar el correo: " + error.message });
+    }
   });
 
   app.post("/api/auth/reset-password", async (req, res) => {
@@ -319,43 +327,48 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     const clientEmail = user?.email;
     const serviceName = service?.name || "Servicio de Pestañas";
 
-    // Email to Admin
-    sendEmail({
-      to: process.env.EMAIL_USER || "nati3112hernandez@gmail.com",
-      subject: `📅 Nueva Cita: ${clientName}`,
-      html: `
-        <div style="font-family: sans-serif; color: #444;">
-          <h2 style="color: #be123c;">¡Tienes una nueva cita!</h2>
-          <p><strong>Cliente:</strong> ${clientName}</p>
-          <p><strong>Servicio:</strong> ${serviceName}</p>
-          <p><strong>Fecha:</strong> ${date}</p>
-          <p><strong>Hora:</strong> ${time}</p>
-          <p><strong>Teléfono:</strong> ${user?.phone || casual_phone || 'No proporcionado'}</p>
-        </div>
-      `
-    });
-
-    // Email to Client
-    if (clientEmail) {
-      sendEmail({
-        to: clientEmail,
-        subject: "📅 Tu cita ha sido agendada - Natalia Hernandez",
+    try {
+      // Email to Admin
+      await sendEmail({
+        to: process.env.EMAIL_USER || "nati3112hernandez@gmail.com",
+        subject: `📅 Nueva Cita: ${clientName}`,
         html: `
-          <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
-            <h2 style="color: #be123c; font-style: italic;">¡Reserva Confirmada!</h2>
-            <p>Hola <strong>${clientName}</strong>, tu cita ha sido agendada correctamente.</p>
-            <div style="background: #fff1f2; padding: 20px; border-radius: 15px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Servicio:</strong> ${serviceName}</p>
-              <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
-              <p style="margin: 5px 0;"><strong>Hora:</strong> ${time}</p>
-            </div>
-            <p>Recuerda llegar 5 minutos antes de tu cita. Si necesitas cancelar o reprogramar, por favor avísanos con tiempo.</p>
-            <p>¡Te esperamos!</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="font-size: 12px; color: #888; text-align: center;">Avenida 35 # 55 - 71 Niquia, Bello</p>
+          <div style="font-family: sans-serif; color: #444;">
+            <h2 style="color: #be123c;">¡Tienes una nueva cita!</h2>
+            <p><strong>Cliente:</strong> ${clientName}</p>
+            <p><strong>Servicio:</strong> ${serviceName}</p>
+            <p><strong>Fecha:</strong> ${date}</p>
+            <p><strong>Hora:</strong> ${time}</p>
+            <p><strong>Teléfono:</strong> ${user?.phone || casual_phone || 'No proporcionado'}</p>
           </div>
         `
       });
+
+      // Email to Client
+      if (clientEmail) {
+        await sendEmail({
+          to: clientEmail,
+          subject: "📅 Tu cita ha sido agendada - Natalia Hernandez",
+          html: `
+            <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
+              <h2 style="color: #be123c; font-style: italic;">¡Reserva Confirmada!</h2>
+              <p>Hola <strong>${clientName}</strong>, tu cita ha sido agendada correctamente.</p>
+              <div style="background: #fff1f2; padding: 20px; border-radius: 15px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Servicio:</strong> ${serviceName}</p>
+                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
+                <p style="margin: 5px 0;"><strong>Hora:</strong> ${time}</p>
+              </div>
+              <p>Recuerda llegar 5 minutos antes de tu cita. Si necesitas cancelar o reprogramar, por favor avísanos con tiempo.</p>
+              <p>¡Te esperamos!</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="font-size: 12px; color: #888; text-align: center;">Avenida 35 # 55 - 71 Niquia, Bello</p>
+            </div>
+          `
+        });
+      }
+    } catch (emailError) {
+      console.error("Error enviando notificaciones:", emailError);
+      // No bloqueamos la respuesta exitosa si la cita se creó, pero lo registramos
     }
 
     res.json({ success: true });
