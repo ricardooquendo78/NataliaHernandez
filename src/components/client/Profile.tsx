@@ -81,7 +81,7 @@ export const Profile = ({ user, onUpdate }: ProfileProps) => {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value.toLowerCase())}
               className="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl focus:outline-none"
             />
           </div>

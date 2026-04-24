@@ -92,7 +92,7 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value.toLowerCase())}
               className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
               required
               disabled={mode === 'reset'}
@@ -143,8 +143,10 @@ export const Login = ({ onLogin, onBack }: LoginProps) => {
               </div>
               <input
                 type="password"
+                inputMode="numeric"
+                maxLength={4}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
                 required={mode !== 'forgot'}
               />

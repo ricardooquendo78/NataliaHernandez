@@ -2,6 +2,7 @@ import express from "express";
 
 import path from "path";
 import mongoose from "mongoose";
+import nodemailer from "nodemailer";
 
 const MONGO_URI = "mongodb://nataliahernandez3112_db_user:5mDm1LW6PZN7kuor@ac-d5ynhin-shard-00-00.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-01.lzmvwzv.mongodb.net:27017,ac-d5ynhin-shard-00-02.lzmvwzv.mongodb.net:27017/natalia?ssl=true&authSource=admin&replicaSet=atlas-iulro6-shard-0";
 
@@ -82,6 +83,28 @@ const Review = mongoose.model('Review', new mongoose.Schema({
   date: String
 }));
 
+// Email Config
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'nati3112hernandez@gmail.com',
+    pass: 'eocc sscm kstz fehv'
+  }
+});
+
+async function sendEmail({ to, subject, html }: { to: string, subject: string, html: string }) {
+  try {
+    await transporter.sendMail({
+      from: '"Natalia Hernandez" <nati3112hernandez@gmail.com>',
+      to,
+      subject,
+      html
+    });
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
 async function seedDatabase() {
   const adminExists = await User.findOne({ role: "admin" });
   if (!adminExists) {
@@ -132,6 +155,26 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
       const user = await User.create({ email, phone, password, name, role: 'premium' });
       const userJson = user.toJSON() as any;
       delete userJson.password;
+
+      // Welcome Email
+      sendEmail({
+        to: email,
+        subject: "✨ Bienvenida a Natalia Hernandez",
+        html: `
+          <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; rounded: 20px;">
+            <h1 style="color: #be123c; font-style: italic;">¡Hola ${name}!</h1>
+            <p>Bienvenida a nuestra comunidad. Estamos felices de tenerte con nosotros.</p>
+            <p>Ahora puedes agendar tus citas de pestañas de forma fácil y rápida desde nuestra plataforma.</p>
+            <div style="background: #fff1f2; padding: 20px; border-radius: 15px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>Tu correo de acceso:</strong> ${email}</p>
+            </div>
+            <p>¡Te esperamos pronto!</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #888;">Natalia Hernandez - Especialista en Pestañas</p>
+          </div>
+        `
+      });
+
       res.json(userJson);
     } catch (e) {
       res.status(400).json({ error: "El correo ya está registrado" });
@@ -148,12 +191,23 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
     const expires_at = new Date(Date.now() + 15 * 60000); // 15 mins
     await PasswordReset.findOneAndUpdate({ email }, { code, expires_at }, { upsert: true });
 
-    console.log(`\n========================================`);
-    console.log(`📧 MOCK EMAIL MESSAGE TO: ${email}`);
-    console.log(`Tu código de recuperación es: ${code}`);
-    console.log(`========================================\n`);
+    // Send Real Email
+    sendEmail({
+      to: email,
+      subject: "🔑 Código de recuperación - Natalia Hernandez",
+      html: `
+        <div style="font-family: sans-serif; color: #444; text-align: center; padding: 40px; background: #fafafa;">
+          <h2 style="color: #be123c;">Recuperación de Contraseña</h2>
+          <p>Tu código de seguridad es:</p>
+          <div style="font-size: 32px; font-weight: bold; letter-spacing: 10px; color: #1c1917; margin: 20px 0;">
+            ${code}
+          </div>
+          <p style="font-size: 12px; color: #888;">Este código expirará en 15 minutos.</p>
+        </div>
+      `
+    });
 
-    res.json({ success: true, message: "Código creado" });
+    res.json({ success: true, message: "Código enviado a tu correo" });
   });
 
   app.post("/api/auth/reset-password", async (req, res) => {
@@ -240,7 +294,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   app.post("/api/appointments", async (req, res) => {
     const { user_id, casual_name, casual_phone, service_id, date, time } = req.body;
-    await Appointment.create({
+    const appointment = await Appointment.create({
       user_id: user_id || null, 
       casual_name, 
       casual_phone, 
@@ -248,6 +302,53 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
       date, 
       time
     });
+
+    // Get info for email
+    const user = user_id ? await User.findById(user_id) : null;
+    const service = await Service.findById(service_id);
+    const clientName = user?.name || casual_name;
+    const clientEmail = user?.email;
+    const serviceName = service?.name || "Servicio de Pestañas";
+
+    // Email to Admin
+    sendEmail({
+      to: "nati3112hernandez@gmail.com",
+      subject: `📅 Nueva Cita: ${clientName}`,
+      html: `
+        <div style="font-family: sans-serif; color: #444;">
+          <h2 style="color: #be123c;">¡Tienes una nueva cita!</h2>
+          <p><strong>Cliente:</strong> ${clientName}</p>
+          <p><strong>Servicio:</strong> ${serviceName}</p>
+          <p><strong>Fecha:</strong> ${date}</p>
+          <p><strong>Hora:</strong> ${time}</p>
+          <p><strong>Teléfono:</strong> ${user?.phone || casual_phone || 'No proporcionado'}</p>
+        </div>
+      `
+    });
+
+    // Email to Client
+    if (clientEmail) {
+      sendEmail({
+        to: clientEmail,
+        subject: "📅 Tu cita ha sido agendada - Natalia Hernandez",
+        html: `
+          <div style="font-family: sans-serif; color: #444; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 20px;">
+            <h2 style="color: #be123c; font-style: italic;">¡Reserva Confirmada!</h2>
+            <p>Hola <strong>${clientName}</strong>, tu cita ha sido agendada correctamente.</p>
+            <div style="background: #fff1f2; padding: 20px; border-radius: 15px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Servicio:</strong> ${serviceName}</p>
+              <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
+              <p style="margin: 5px 0;"><strong>Hora:</strong> ${time}</p>
+            </div>
+            <p>Recuerda llegar 5 minutos antes de tu cita. Si necesitas cancelar o reprogramar, por favor avísanos con tiempo.</p>
+            <p>¡Te esperamos!</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #888; text-align: center;">Avenida 35 # 55 - 71 Niquia, Bello</p>
+          </div>
+        `
+      });
+    }
+
     res.json({ success: true });
   });
 
